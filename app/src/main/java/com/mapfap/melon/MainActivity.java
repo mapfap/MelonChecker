@@ -23,6 +23,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+
 import ca.uol.aig.fftpack.RealDoubleFFT;
 
 
@@ -36,6 +38,7 @@ public class MainActivity extends Activity implements OnClickListener{
     AudioRecord recorder;
     private RealDoubleFFT transformer;
     Button startStopButton;
+    TextView console;
     boolean started = false;
     boolean CANCELLED_FLAG = false;
     RecordingTask recordingTask;
@@ -46,6 +49,7 @@ public class MainActivity extends Activity implements OnClickListener{
     LinearLayout mainLayout;
 
     int screenWidth;
+    int maxAmplitude;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,6 +89,12 @@ public class MainActivity extends Activity implements OnClickListener{
         startStopButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         mainLayout.addView(startStopButton);
+
+        console = new TextView(this);
+        console.setText(">> ");
+        console.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        mainLayout.addView(console);
 
         setContentView(mainLayout);
     }
@@ -128,14 +138,14 @@ public class MainActivity extends Activity implements OnClickListener{
         }
 
         protected void drawScale() {
-            spectrumCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-            spectrumCanvas.drawLine(0, 50, BUFFER_SIZE, 50, spectrumPainter);
-            spectrumCanvas.drawLine(0, 100, BUFFER_SIZE, 100, spectrumPainter);
-            spectrumCanvas.drawLine(0, 150, BUFFER_SIZE, 150, spectrumPainter);
+//            spectrumCanvas.drawLine(0, 50, BUFFER_SIZE, 50, spectrumPainter);
+//            spectrumCanvas.drawLine(0, 100, BUFFER_SIZE, 100, spectrumPainter);
+//            spectrumCanvas.drawLine(0, 150, BUFFER_SIZE, 150, spectrumPainter);
         }
 
         @Override
         protected void onProgressUpdate(double[]...progress) {
+            spectrumCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
             drawScale();
             for (int i = 0; i < progress[0].length; i++) {
                 if (i < 100) {
@@ -146,7 +156,13 @@ public class MainActivity extends Activity implements OnClickListener{
                 }
                 int x = i;
                 int downy = 0;
-                int upy = (int) (progress[0][i] * 100);
+                int upy = (int) (progress[0][i] * 10);
+
+                if (upy > maxAmplitude) {
+                    maxAmplitude = upy;
+                    console.setText(">> Max Amplitude: " + maxAmplitude + ", Frequency: " + i);
+                }
+
                 spectrumCanvas.drawLine(x, downy, x, upy, spectrumPainter);
             }
 
@@ -182,6 +198,7 @@ public class MainActivity extends Activity implements OnClickListener{
             started = true;
             CANCELLED_FLAG = false;
             startStopButton.setText("Stop");
+            maxAmplitude = Integer.MIN_VALUE;
             recordingTask = new RecordingTask();
             recordingTask.execute();
         }
